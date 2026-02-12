@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Task Capture</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <h1>📝 Inbox</h1>
+            <button id="refresh" class="icon-btn">🔄</button>
+        </header>
+
+        <!-- Capture Bar -->
+        <div class="capture-bar">
+            <button id="voice-btn" class="capture-btn" title="Record voice note">🎤</button>
+            <button id="camera-btn" class="capture-btn" title="Take photo">📷</button>
+            <button id="text-btn" class="capture-btn" title="Add text note">✏️</button>
+        </div>
+
+        <!-- Main Content -->
+        <main id="content">
+            <!-- Views will be injected here -->
+        </main>
+
+        <!-- Voice Recording Modal -->
+        <div id="voice-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🎤 Recording</h2>
+                <div class="recording-indicator">
+                    <div class="pulse"></div>
+                    <span id="recording-time">00:00</span>
+                </div>
+                <div class="modal-actions">
+                    <button id="stop-voice" class="btn btn-danger">Stop & Save</button>
+                    <button id="cancel-voice" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Modal -->
+        <div id="camera-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>📷 Add Photo</h2>
+                <div id="camera-preview">
+                    <video id="camera-feed" autoplay playsinline></video>
+                    <canvas id="camera-canvas" class="hidden"></canvas>
+                </div>
+                <div class="modal-actions">
+                    <button id="capture-photo" class="btn btn-primary">Capture</button>
+                    <button id="use-gallery" class="btn btn-secondary">Use Gallery</button>
+                    <input type="file" id="gallery-input" accept="image/*" class="hidden">
+                    <button id="cancel-camera" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photo Markup Modal -->
+        <div id="markup-modal" class="modal hidden">
+            <div class="modal-content fullscreen">
+                <h2>✏️ Markup Photo</h2>
+                <div id="markup-container">
+                    <canvas id="markup-canvas"></canvas>
+                </div>
+                <div class="markup-tools">
+                    <button class="tool-btn" data-tool="pen">✏️</button>
+                    <button class="tool-btn" data-tool="arrow">➡️</button>
+                    <button class="tool-btn" data-tool="text">T</button>
+                    <button class="tool-btn" data-tool="undo">↩️</button>
+                    <button class="tool-btn" data-tool="clear">🗑️</button>
+                    <div class="color-picker">
+                        <button class="color-btn active" data-color="#ff0000" style="background: #ff0000"></button>
+                        <button class="color-btn" data-color="#00ff00" style="background: #00ff00"></button>
+                        <button class="color-btn" data-color="#0000ff" style="background: #0000ff"></button>
+                        <button class="color-btn" data-color="#ffff00" style="background: #ffff00"></button>
+                        <button class="color-btn" data-color="#ffffff" style="background: #ffffff"></button>
+                        <button class="color-btn" data-color="#000000" style="background: #000000"></button>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="save-markup" class="btn btn-primary">Save Note</button>
+                    <button id="cancel-markup" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Note Modal -->
+        <div id="text-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>✏️ Add Note</h2>
+                <textarea id="note-input" placeholder="Type your note here...&#10;&#10;Add #hashtags for project association"></textarea>
+                <div class="modal-actions">
+                    <button id="save-text" class="btn btn-primary">Save</button>
+                    <button id="cancel-text" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

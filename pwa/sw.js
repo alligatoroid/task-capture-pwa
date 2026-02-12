@@ -1,0 +1,1 @@
+[["/", "/index.html", "/styles.css", "/app.js", "/manifest.json"], {}]
