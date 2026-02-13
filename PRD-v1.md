@@ -234,6 +234,28 @@ Active | On Hold | Complete
 
 ---
 
+## Reach Goals (Nice-to-Have, Not Core)
+
+### Circular/Wheel Calendar (Donut-Shaped Annual View)
+- **Concept:** A year-shaped wheel/donut calendar showing all projects and events
+- **Visual:** Circular layout with months as wedges or concentric rings
+- **Purpose:** Peter's idiosyncratic annual planning system — visualize the year as a whole
+- **Implementation Ideas:**
+  - GUI port from Google Calendar (circular rendering of calendar data)
+  - Interactive wheel: rotate to view different months/quarters
+  - Color-coded by project type or domain
+  - Integration with existing inbox/project data
+- **Note:** Peter has illustrations to clarify the exact visualization needed
+- **Status:** Documented for future exploration, not blocking MVP
+
+### Custom Annual Planning System
+- Personalized time segmentation (not standard months/quarters)
+- Visual planning horizons (immediate, mid-term, long-term)
+- Seasonal or context-based organization
+- Integrate with project deadlines and milestones
+
+---
+
 ## Technical Decisions
 
 ### Storage: Plain Markdown Files

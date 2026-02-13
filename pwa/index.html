@@ -18,17 +18,26 @@
             <button id="refresh" class="icon-btn">🔄</button>
         </header>
 
-        <!-- Capture Bar -->
-        <div class="capture-bar">
-            <button id="voice-btn" class="capture-btn" title="Record voice note">🎤</button>
-            <button id="camera-btn" class="capture-btn" title="Take photo">📷</button>
-            <button id="text-btn" class="capture-btn" title="Add text note">✏️</button>
-        </div>
-
         <!-- Main Content -->
         <main id="content">
             <!-- Views will be injected here -->
         </main>
+
+        <!-- Capture Area (Fixed at bottom) -->
+        <div class="capture-area">
+            <input 
+                type="text" 
+                id="quick-text" 
+                placeholder="Type a quick note..." 
+                autocomplete="off"
+                autocapitalize="off"
+            >
+            <div class="capture-bar">
+                <button id="voice-btn" class="capture-btn" title="Record voice note">🎤</button>
+                <button id="camera-btn" class="capture-btn" title="Take photo">📷</button>
+                <button id="text-btn" class="capture-btn" title="Add text note">✏️</button>
+            </div>
+        </div>
 
         <!-- Voice Recording Modal -->
         <div id="voice-modal" class="modal hidden">

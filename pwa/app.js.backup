@@ -40,12 +40,12 @@ class TaskCaptureApp {
   }
   
   renderInbox() {
-    const content = document.getElementById('content');
-    if (!content) return;
+    const inbox = document.getElementById('inbox');
+    if (!inbox) return;
     
     const groupedNotes = this.groupNotesByDate(this.notes);
     
-    content.innerHTML = Object.entries(groupedNotes)
+    inbox.innerHTML = Object.entries(groupedNotes)
       .sort(([a], [b]) => new Date(b) - new Date(a))
       .map(([date, notes]) => `
         <div class="date-group">
@@ -71,14 +71,18 @@ class TaskCaptureApp {
   formatDate(dateStr) {
     const date = new Date(dateStr);
     const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
     
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
     }
-    return date.toLocaleDateString('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'short', 
+      day: 'numeric' 
     });
   }
   
@@ -108,15 +112,16 @@ class TaskCaptureApp {
       `;
     }
     
-    // Format: YYYY-MM-DD HH:MM (24-hour format)
-    const date = new Date(note.created_at);
-    const dateStr = date.toISOString().substring(0, 16).replace('T', ' ');
+    const time = new Date(note.created_at).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit'
+    });
     
     return `
       <div class="note-item" data-id="${note.id}">
         <div class="note-header">
           <span class="note-type">${this.getTypeIcon(note.type)}</span>
-          <span class="note-time">${dateStr}</span>
+          <span class="note-time">${time}</span>
           <button class="btn-delete" data-id="${note.id}" aria-label="Delete note">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 6h18"></path>
@@ -152,50 +157,7 @@ class TaskCaptureApp {
     return div.innerHTML;
   }
   
-  setupEventListeners() {
-    // Main capture buttons
-    const voiceBtn = document.getElementById('voice-btn');
-    if (voiceBtn) {
-      voiceBtn.addEventListener('click', () => {
-        this.showModal('voice-modal');
-        this.startRecording();
-      });
-    }
-    
-    const cameraBtn = document.getElementById('camera-btn');
-    if (cameraBtn) {
-      cameraBtn.addEventListener('click', () => {
-        this.showModal('camera-modal');
-      });
-    }
-    
-    const textBtn = document.getElementById('text-btn');
-    if (textBtn) {
-      textBtn.addEventListener('click', () => {
-        this.showModal('text-modal');
-      });
-    }
-    
-    // Quick text input
-    const quickText = document.getElementById('quick-text');
-    if (quickText) {
-      quickText.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && quickText.value.trim()) {
-          this.saveQuickText(quickText.value.trim());
-          quickText.value = '';
-        }
-      });
-    }
-    
-    // Modal buttons
-    document.querySelectorAll('[data-modal]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const modalId = btn.dataset.modal;
-        if (modalId) {
-          this.showModal(modalId);
-        }
-      });
-    });
+  [{"Enter' && quickText.value.trim()) {\n          this.saveQuickText(quickText.value.trim());\n          quickText.value = '": ""}, {}]
     
     // Close modal buttons
     document.querySelectorAll('[data-close-modal]').forEach(btn => {
@@ -216,107 +178,41 @@ class TaskCaptureApp {
       });
     });
     
-    // Voice modal buttons
-    const stopVoiceBtn = document.getElementById('stop-voice');
-    if (stopVoiceBtn) {
-      stopVoiceBtn.addEventListener('click', () => {
-        this.stopRecording();
-        this.hideModal('voice-modal');
-      });
-    }
-    
-    const cancelVoiceBtn = document.getElementById('cancel-voice');
-    if (cancelVoiceBtn) {
-      cancelVoiceBtn.addEventListener('click', () => {
-        this.stopRecording();
-        this.hideModal('voice-modal');
-      });
-    }
-    
-    // Camera modal buttons
-    const capturePhotoBtn = document.getElementById('capture-photo');
-    if (capturePhotoBtn) {
-      capturePhotoBtn.addEventListener('click', () => this.capturePhoto());
-    }
-    
-    const useGalleryBtn = document.getElementById('use-gallery');
-    if (useGalleryBtn) {
-      useGalleryBtn.addEventListener('click', () => {
-        document.getElementById('gallery-input').click();
-      });
-    }
-    
-    const galleryInput = document.getElementById('gallery-input');
-    if (galleryInput) {
-      galleryInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-          this.handleGalleryPhoto(e.target.files[0]);
-        }
-      });
-    }
-    
-    const cancelCameraBtn = document.getElementById('cancel-camera');
-    if (cancelCameraBtn) {
-      cancelCameraBtn.addEventListener('click', () => {
-        this.hideModal('camera-modal');
-      });
-    }
-    
-    // Text modal buttons
-    const saveTextBtn = document.getElementById('save-text');
+    // Text note save
+    const saveTextBtn = document.getElementById('save-text-note');
     if (saveTextBtn) {
-      saveTextBtn.addEventListener('click', () => {
-        const textarea = document.getElementById('note-input');
-        if (textarea && textarea.value.trim()) {
-          this.saveQuickText(textarea.value.trim());
-          textarea.value = '';
-        }
-        this.hideModal('text-modal');
-      });
+      saveTextBtn.addEventListener('click', () => this.saveTextNote());
     }
     
-    const cancelTextBtn = document.getElementById('cancel-text');
-    if (cancelTextBtn) {
-      cancelTextBtn.addEventListener('click', () => {
-        this.hideModal('text-modal');
-      });
+    // Voice recording
+    const startRecordBtn = document.getElementById('start-record');
+    const stopRecordBtn = document.getElementById('stop-record');
+    if (startRecordBtn) {
+      startRecordBtn.addEventListener('click', () => this.startRecording());
+    }
+    if (stopRecordBtn) {
+      stopRecordBtn.addEventListener('click', () => this.stopRecording());
     }
     
-    // Markup modal buttons
-    const saveMarkupBtn = document.getElementById('save-markup');
-    if (saveMarkupBtn) {
-      saveMarkupBtn.addEventListener('click', () => {
-        this.saveMarkup();
-        this.hideModal('markup-modal');
-      });
-    }
-    
-    const cancelMarkupBtn = document.getElementById('cancel-markup');
-    if (cancelMarkupBtn) {
-      cancelMarkupBtn.addEventListener('click', () => {
-        this.hideModal('markup-modal');
-      });
+    // Camera capture
+    const captureBtn = document.getElementById('capture-photo');
+    if (captureBtn) {
+      captureBtn.addEventListener('click', () => this.capturePhoto());
     }
     
     // Markup tools
     this.setupMarkupTools();
     
     // Delete note buttons (event delegation)
-    const content = document.getElementById('content');
-    if (content) {
-      content.addEventListener('click', (e) => {
+    const inbox = document.getElementById('inbox');
+    if (inbox) {
+      inbox.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.btn-delete');
         if (deleteBtn) {
           const noteId = deleteBtn.dataset.id;
           this.deleteNote(noteId);
         }
       });
-    }
-    
-    // Refresh button
-    const refreshBtn = document.getElementById('refresh');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => this.loadNotes());
     }
     
     // Keyboard shortcuts
@@ -498,12 +394,14 @@ class TaskCaptureApp {
       
       this.mediaRecorder.start();
       
+      // Update UI
+      document.getElementById('start-record').classList.add('hidden');
+      document.getElementById('stop-record').classList.remove('hidden');
+      document.getElementById('recording-status').classList.remove('hidden');
+      
       // Start timer
-      this.recordingTime = 0;
-      this.recordingTimer = setInterval(() => {
-        this.recordingTime += 0.1;
-        this.updateRecordingTimer();
-      }, 100);
+      this.recordingStartTime = Date.now();
+      this.recordingTimer = setInterval(() => this.updateRecordingTimer(), 100);
       
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -514,10 +412,6 @@ class TaskCaptureApp {
   stopRecording() {
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
-    }
-    
-    // Stop microphone stream
-    if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
     }
     
@@ -526,11 +420,18 @@ class TaskCaptureApp {
       clearInterval(this.recordingTimer);
       this.recordingTimer = null;
     }
+    
+    // Update UI
+    document.getElementById('start-record').classList.remove('hidden');
+    document.getElementById('stop-record').classList.add('hidden');
+    document.getElementById('recording-status').classList.add('hidden');
+    document.getElementById('recording-time').textContent = '0:00';
   }
   
   updateRecordingTimer() {
-    const mins = Math.floor(this.recordingTime / 60);
-    const secs = Math.floor(this.recordingTime % 60);
+    const elapsed = (Date.now() - this.recordingStartTime) / 1000;
+    const mins = Math.floor(elapsed / 60);
+    const secs = Math.floor(elapsed % 60);
     document.getElementById('recording-time').textContent = 
       `${mins}:${secs.toString().padStart(2, '0')}`;
   }
@@ -561,15 +462,19 @@ class TaskCaptureApp {
     }
   }
   
-  async startCamera() {
+  async capturePhoto() {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'environment' } 
       });
       
-      const video = document.getElementById('camera-feed');
+      const video = document.getElementById('camera-preview');
       video.srcObject = this.stream;
-      await video.play();
+      video.play();
+      
+      document.getElementById('capture-photo').classList.add('hidden');
+      document.getElementById('use-photo').classList.remove('hidden');
+      document.getElementById('retake-photo').classList.remove('hidden');
       
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -577,15 +482,9 @@ class TaskCaptureApp {
     }
   }
   
-  async capturePhoto() {
-    const video = document.getElementById('camera-feed');
-    
-    if (!this.stream || !video.srcObject) {
-      await this.startCamera();
-      return;
-    }
-    
-    const canvas = document.getElementById('camera-canvas');
+  usePhoto() {
+    const video = document.getElementById('camera-preview');
+    const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
@@ -596,12 +495,25 @@ class TaskCaptureApp {
     
     // Stop camera stream
     this.stream.getTracks().forEach(track => track.stop());
-    this.stream = null;
     
-    // Show markup modal
+    // Show markup modal with the photo
     this.setupMarkupCanvas(this.currentPhoto);
     this.showModal('markup-modal');
     this.hideModal('camera-modal');
+    
+    // Reset camera modal
+    document.getElementById('capture-photo').classList.remove('hidden');
+    document.getElementById('use-photo').classList.add('hidden');
+    document.getElementById('retake-photo').classList.add('hidden');
+  }
+  
+  retakePhoto() {
+    this.stream.getTracks().forEach(track => track.stop());
+    this.capturePhoto();
+    
+    document.getElementById('capture-photo').classList.remove('hidden');
+    document.getElementById('use-photo').classList.add('hidden');
+    document.getElementById('retake-photo').classList.add('hidden');
   }
   
   setupMarkupCanvas(photoDataUrl) {
@@ -619,44 +531,6 @@ class TaskCaptureApp {
     this.markupHistory = [];
   }
   
-  async handleGalleryPhoto(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      this.currentPhoto = e.target.result;
-      this.setupMarkupCanvas(this.currentPhoto);
-      this.showModal('markup-modal');
-      this.hideModal('camera-modal');
-    };
-    reader.readAsDataURL(file);
-  }
-  
-  async saveQuickText(text) {
-    try {
-      const response = await fetch(this.apiBaseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          type: 'text',
-        }),
-      });
-      
-      if (response.ok) {
-        const note = await response.json();
-        this.notes.unshift(note);
-        this.renderInbox();
-        this.showToast('Note saved!');
-      } else {
-        throw new Error('Failed to save note');
-      }
-    } catch (error) {
-      console.error('Error saving quick text:', error);
-      this.showToast('Failed to save note');
-    }
-  }
-
   async saveTextNote() {
     const textarea = document.getElementById('note-content');
     const content = textarea.value.trim();
@@ -738,7 +612,7 @@ class TaskCaptureApp {
       
       // Start camera if opening camera modal
       if (id === 'camera-modal') {
-        this.startCamera();
+        this.capturePhoto();
       }
     }
   }

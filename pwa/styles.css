@@ -56,17 +56,43 @@ header h1 {
     padding: 0.5rem;
 }
 
-/* Capture Bar */
-.capture-bar {
+/* Capture Area (Bottom) */
+.capture-area {
     background: var(--bg-secondary);
     padding: 1rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 99;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#quick-text {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--text-secondary);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    margin-bottom: 0.75rem;
+}
+
+#quick-text:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+#quick-text::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Capture Bar */
+.capture-bar {
     display: flex;
     gap: 1rem;
     justify-content: center;
-    position: sticky;
-    top: 4rem;
-    z-index: 99;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .capture-btn {
