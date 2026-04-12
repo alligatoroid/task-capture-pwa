@@ -14,13 +14,42 @@
     <div id="app">
         <!-- Header -->
         <header>
-            <h1>📝 Inbox</h1>
+            <div class="header-nav">
+                <button id="nav-inbox" class="nav-btn active">📝 Inbox</button>
+                <button id="nav-journal" class="nav-btn">🪞 Journal</button>
+            </div>
             <button id="refresh" class="icon-btn">🔄</button>
         </header>
 
-        <!-- Main Content -->
+        <!-- Inbox View -->
         <main id="content">
-            <!-- Views will be injected here -->
+            <!-- Notes will be injected here -->
+        </main>
+
+        <!-- Journal View -->
+        <main id="journal-view" class="hidden">
+            <div class="journal-container">
+                <div id="thoughts-section" class="thoughts-section">
+                    <h2 class="thoughts-header">💭 Thoughts from today</h2>
+                    <div id="thoughts-list" class="thoughts-list">
+                        <p class="thoughts-empty">No reflections captured yet today. Use the 💭 button to capture thoughts throughout the day.</p>
+                    </div>
+                </div>
+                <div class="journal-divider"></div>
+                <div class="journal-editor-section">
+                    <h2 class="journal-date" id="journal-date"></h2>
+                    <div
+                        id="journal-editor"
+                        class="journal-editor"
+                        contenteditable="true"
+                        data-placeholder="Start writing your reflection..."
+                    ></div>
+                    <div class="journal-footer">
+                        <span id="journal-status" class="journal-status">Ready</span>
+                        <button id="save-journal" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- Capture Area (Fixed at bottom) -->
@@ -36,6 +65,7 @@
                 <button id="voice-btn" class="capture-btn" title="Record voice note">🎤</button>
                 <button id="camera-btn" class="capture-btn" title="Take photo">📷</button>
                 <button id="text-btn" class="capture-btn" title="Add text note">✏️</button>
+                <button id="reflect-btn" class="capture-btn reflect-btn" title="Capture a reflection">💭</button>
             </div>
         </div>
 
@@ -108,6 +138,19 @@
                 <div class="modal-actions">
                     <button id="save-text" class="btn btn-primary">Save</button>
                     <button id="cancel-text" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reflection Modal -->
+        <div id="reflect-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>💭 Quick Reflection</h2>
+                <p class="modal-subtitle">What are you noticing right now?</p>
+                <textarea id="reflect-input" placeholder="A thought, observation, or something you noticed about yourself..."></textarea>
+                <div class="modal-actions">
+                    <button id="save-reflect" class="btn btn-primary">Save</button>
+                    <button id="cancel-reflect" class="btn btn-secondary">Cancel</button>
                 </div>
             </div>
         </div>

@@ -12,20 +12,22 @@ const PORT = 3000;
 const DATA_DIR = '/home/ubuntu/.openclaw/workspace/projects/task-app/data';
 const INBOX_FILE = path.join(DATA_DIR, 'inbox.md');
 const MEDIA_DIR = path.join(DATA_DIR, 'media');
+const JOURNAL_DIR = path.join(DATA_DIR, 'journal');
 
 // Create directories on startup
 async function createDirs() {
     try {
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.mkdir(MEDIA_DIR, { recursive: true });
-        
+        await fs.mkdir(JOURNAL_DIR, { recursive: true });
+
         // Initialize inbox.md if it doesn't exist
         try {
             await fs.access(INBOX_FILE);
         } catch {
             await fs.writeFile(INBOX_FILE, '# Inbox\n\n', 'utf8');
         }
-        
+
         console.log('Directories created successfully');
     } catch (err) {
         console.error('Error creating directories:', err);
@@ -271,6 +273,85 @@ app.post('/api/transcribe', async (req, res) => {
     } catch (err) {
         console.error('Transcription error:', err);
         res.status(500).json({ error: 'Server error during transcription' });
+    }
+});
+
+// GET /api/reflections/today - Get today's reflection notes
+app.get('/api/reflections/today', async (req, res) => {
+    try {
+        const content = await fs.readFile(INBOX_FILE, 'utf8');
+        const notes = parseInboxContent(content);
+        const today = new Date().toISOString().split('T')[0];
+
+        const reflections = notes.filter(note => {
+            const noteDate = note.created_at.split('T')[0];
+            return noteDate === today && note.tags && note.tags.includes('reflection');
+        });
+
+        res.json(reflections);
+    } catch (err) {
+        console.error('Error loading reflections:', err);
+        res.status(500).json({ error: 'Failed to load reflections' });
+    }
+});
+
+// GET /api/journal/:date - Get journal entry for a specific date
+app.get('/api/journal/:date', async (req, res) => {
+    try {
+        const { date } = req.params;
+        const journalFile = path.join(JOURNAL_DIR, `${date}.md`);
+
+        try {
+            const content = await fs.readFile(journalFile, 'utf8');
+            res.json({ date, content, exists: true });
+        } catch {
+            res.json({ date, content: '', exists: false });
+        }
+    } catch (err) {
+        console.error('Error loading journal:', err);
+        res.status(500).json({ error: 'Failed to load journal entry' });
+    }
+});
+
+// POST /api/journal/:date - Save journal entry for a specific date
+app.post('/api/journal/:date', async (req, res) => {
+    try {
+        const { date } = req.params;
+        const { content } = req.body;
+        const journalFile = path.join(JOURNAL_DIR, `${date}.md`);
+
+        // Build the markdown file with frontmatter
+        const markdown = `---
+date: ${date}
+updated: ${new Date().toISOString()}
+---
+
+# Journal — ${date}
+
+${content}
+`;
+
+        await fs.writeFile(journalFile, markdown, 'utf8');
+        res.json({ success: true, date });
+    } catch (err) {
+        console.error('Error saving journal:', err);
+        res.status(500).json({ error: 'Failed to save journal entry' });
+    }
+});
+
+// GET /api/journal - List all journal entries
+app.get('/api/journal', async (req, res) => {
+    try {
+        const files = await fs.readdir(JOURNAL_DIR);
+        const entries = files
+            .filter(f => f.endsWith('.md'))
+            .map(f => f.replace('.md', ''))
+            .sort()
+            .reverse();
+        res.json(entries);
+    } catch (err) {
+        console.error('Error listing journals:', err);
+        res.status(500).json({ error: 'Failed to list journal entries' });
     }
 });
 

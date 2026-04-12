@@ -15,14 +15,19 @@ class TaskCaptureApp {
     this.lastX = 0;
     this.lastY = 0;
     this.apiBaseUrl = '/api/notes';
-    
+    this.currentView = 'inbox';
+    this.journalAutoSaveTimer = null;
+
     this.init();
   }
-  
+
   init() {
     this.loadNotes();
     this.setupEventListeners();
     this.setupServiceWorker();
+    this.setupNavigation();
+    this.setupReflection();
+    this.setupJournal();
   }
   
   async loadNotes() {
@@ -112,10 +117,12 @@ class TaskCaptureApp {
     const date = new Date(note.created_at);
     const dateStr = date.toISOString().substring(0, 16).replace('T', ' ');
     
+    const isReflection = note.tags && note.tags.includes('reflection');
+
     return `
-      <div class="note-item" data-id="${note.id}">
+      <div class="note-item${isReflection ? ' note-reflection' : ''}" data-id="${note.id}">
         <div class="note-header">
-          <span class="note-type">${this.getTypeIcon(note.type)}</span>
+          <span class="note-type">${this.getTypeIcon(note.type, note.tags)}</span>
           <span class="note-time">${dateStr}</span>
           <button class="btn-delete" data-id="${note.id}" aria-label="Delete note">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -130,7 +137,9 @@ class TaskCaptureApp {
     `;
   }
   
-  getTypeIcon(type) {
+  getTypeIcon(type, tags) {
+    // Show reflection icon if tagged
+    if (tags && tags.includes('reflection')) return '💭';
     const icons = {
       text: '📝',
       audio: '🎤',
@@ -760,12 +769,249 @@ class TaskCaptureApp {
     toast.className = 'toast';
     toast.textContent = message;
     document.body.appendChild(toast);
-    
+
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
       toast.classList.remove('show');
       setTimeout(() => toast.remove(), 300);
     }, 3000);
+  }
+
+  // ── Navigation ──────────────────────────────────────────
+
+  setupNavigation() {
+    const navInbox = document.getElementById('nav-inbox');
+    const navJournal = document.getElementById('nav-journal');
+
+    if (navInbox) {
+      navInbox.addEventListener('click', () => this.switchView('inbox'));
+    }
+    if (navJournal) {
+      navJournal.addEventListener('click', () => this.switchView('journal'));
+    }
+  }
+
+  switchView(view) {
+    this.currentView = view;
+    const content = document.getElementById('content');
+    const journalView = document.getElementById('journal-view');
+    const navInbox = document.getElementById('nav-inbox');
+    const navJournal = document.getElementById('nav-journal');
+
+    if (view === 'inbox') {
+      content.classList.remove('hidden');
+      journalView.classList.add('hidden');
+      navInbox.classList.add('active');
+      navJournal.classList.remove('active');
+    } else {
+      content.classList.add('hidden');
+      journalView.classList.remove('hidden');
+      navInbox.classList.remove('active');
+      navJournal.classList.add('active');
+      this.loadJournalView();
+    }
+  }
+
+  // ── Reflection Capture ──────────────────────────────────
+
+  setupReflection() {
+    const reflectBtn = document.getElementById('reflect-btn');
+    if (reflectBtn) {
+      reflectBtn.addEventListener('click', () => {
+        this.showModal('reflect-modal');
+        const input = document.getElementById('reflect-input');
+        if (input) {
+          input.value = '';
+          setTimeout(() => input.focus(), 100);
+        }
+      });
+    }
+
+    const saveReflectBtn = document.getElementById('save-reflect');
+    if (saveReflectBtn) {
+      saveReflectBtn.addEventListener('click', () => {
+        const input = document.getElementById('reflect-input');
+        if (input && input.value.trim()) {
+          this.saveReflection(input.value.trim());
+          input.value = '';
+          this.hideModal('reflect-modal');
+        }
+      });
+    }
+
+    const cancelReflectBtn = document.getElementById('cancel-reflect');
+    if (cancelReflectBtn) {
+      cancelReflectBtn.addEventListener('click', () => {
+        this.hideModal('reflect-modal');
+      });
+    }
+  }
+
+  async saveReflection(text) {
+    // Append #reflection tag if not already present
+    const taggedText = text.includes('#reflection') ? text : `${text} #reflection`;
+
+    try {
+      const response = await fetch(this.apiBaseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: taggedText, type: 'text' }),
+      });
+
+      if (response.ok) {
+        const note = await response.json();
+        this.notes.unshift(note);
+        this.renderInbox();
+        this.showToast('Reflection saved 💭');
+      } else {
+        throw new Error('Failed to save reflection');
+      }
+    } catch (error) {
+      console.error('Error saving reflection:', error);
+      this.showToast('Failed to save reflection');
+    }
+  }
+
+  // ── Journal View ────────────────────────────────────────
+
+  setupJournal() {
+    const saveBtn = document.getElementById('save-journal');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => this.saveJournal());
+    }
+
+    // Auto-save on pause in typing
+    const editor = document.getElementById('journal-editor');
+    if (editor) {
+      editor.addEventListener('input', () => {
+        this.updateJournalStatus('Unsaved changes');
+        clearTimeout(this.journalAutoSaveTimer);
+        this.journalAutoSaveTimer = setTimeout(() => {
+          this.saveJournal();
+        }, 3000);
+      });
+    }
+  }
+
+  async loadJournalView() {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Set the date header
+    const dateEl = document.getElementById('journal-date');
+    if (dateEl) {
+      const formatted = new Date(today + 'T12:00:00').toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      dateEl.textContent = formatted;
+    }
+
+    // Load today's reflections
+    await this.loadTodayReflections();
+
+    // Load existing journal entry
+    await this.loadJournalEntry(today);
+  }
+
+  async loadTodayReflections() {
+    try {
+      const response = await fetch('/api/reflections/today');
+      if (response.ok) {
+        const reflections = await response.json();
+        this.renderThoughts(reflections);
+      }
+    } catch (error) {
+      console.error('Error loading reflections:', error);
+    }
+  }
+
+  renderThoughts(reflections) {
+    const list = document.getElementById('thoughts-list');
+    if (!list) return;
+
+    if (reflections.length === 0) {
+      list.innerHTML = `<p class="thoughts-empty">No reflections captured yet today. Use the 💭 button to capture thoughts throughout the day.</p>`;
+      return;
+    }
+
+    list.innerHTML = reflections.map(r => {
+      // Strip the #reflection tag for cleaner display
+      const text = (r.content || '').replace(/#reflection/g, '').trim();
+      const time = new Date(r.created_at).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      return `
+        <div class="thought-card">
+          <div class="thought-text">${this.escapeHtml(text)}</div>
+          <div class="thought-time">${time}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async loadJournalEntry(date) {
+    try {
+      const response = await fetch(`/api/journal/${date}`);
+      if (response.ok) {
+        const data = await response.json();
+        const editor = document.getElementById('journal-editor');
+        if (editor && data.content) {
+          // Strip the frontmatter and header to show just the body
+          const body = data.content
+            .replace(/---[\s\S]*?---\n*/m, '')
+            .replace(/^# Journal.*\n*/m, '')
+            .trim();
+          editor.innerText = body;
+        } else if (editor) {
+          editor.innerText = '';
+        }
+        this.updateJournalStatus(data.exists ? 'Loaded' : 'Ready');
+      }
+    } catch (error) {
+      console.error('Error loading journal:', error);
+    }
+  }
+
+  async saveJournal() {
+    const editor = document.getElementById('journal-editor');
+    if (!editor) return;
+
+    const content = editor.innerText.trim();
+    if (!content) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    this.updateJournalStatus('Saving...');
+
+    try {
+      const response = await fetch(`/api/journal/${today}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+
+      if (response.ok) {
+        this.updateJournalStatus('Saved');
+      } else {
+        throw new Error('Failed to save');
+      }
+    } catch (error) {
+      console.error('Error saving journal:', error);
+      this.updateJournalStatus('Save failed');
+      this.showToast('Failed to save journal entry');
+    }
+  }
+
+  updateJournalStatus(text) {
+    const status = document.getElementById('journal-status');
+    if (status) {
+      status.textContent = text;
+      status.className = 'journal-status';
+      if (text === 'Saved') status.classList.add('saved');
+      if (text === 'Saving...') status.classList.add('saving');
+    }
   }
 }
 
